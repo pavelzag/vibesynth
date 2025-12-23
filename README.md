@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# VibeSynth 🎹
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![VibeSynth UI](src/assets/screenshots/ui_main.png)
 
-Currently, two official plugins are available:
+**VibeSynth** is a futuristic, cyberpunk-inspired web synthesizer built with **React**, **TypeScript**, and the **Web Audio API**. It features a 3-octave playable keyboard, a 16-step sequencer, and real-time audio effects like distortion and filter sweeps.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+### 🎹 3-Octave Virtual Keyboard
+- Ranges from **C3 to C6** (37 keys).
+- Fully responsive design that fits perfectly on standard screens.
+- **Mouse & Touch**: Click or drag across keys to play.
+- **Keyboard Support**: Play the middle octave using your computer keyboard (`A` through `L` rows).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🎛️ 16-Step Sequencer
+- **Pattern Creation**: Enable steps on a 16-step grid.
+- **Live Recording**: Hit `Record` (Red Circle) and play keys to quantize notes into the sequence in real-time.
+- **BPM Control**: Adjust tempo from **30 to 300 BPM** with a dedicated LED display.
+- **Randomizer**: Instantly generate unique, evolving patterns with the click of a button.
 
-## Expanding the ESLint configuration
+![Sequencer Action](src/assets/screenshots/sequencer_action.png)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 🔊 Audio Engine & FX
+- **Oscillators**: Powered by Web Audio API standard oscillators.
+- **Distortion**: A dedicated **Dry/Wet Knob** (Red) adds grit and saturation to the sound.
+- **Filter**: Resonant Low-Pass Filter with Cutoff and Resonance controls (Cyan/Fuchsia knobs).
+- **Octave Shift**: Shift the entire keyboard range up or down by 3 octaves.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠️ Tech Stack
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Frontend Framework**: React 18
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4 (for that neon cyberpunk aesthetic)
+- **Audio**: Native Web Audio API (No external sound libraries)
+- **Build Tool**: Vite
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🚀 Getting Started
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Installation
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/pavelzag/vibesynth.git
+   cd vibesynth
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open your browser at `http://localhost:5173` (or the port shown in terminal).
+
+## 🎮 How to Play
+
+1. **Play**: Click the keys or use your keyboard (`A`, `S`, `D`... for White keys, `W`, `E`... for Black keys).
+2. **Shape Sound**:
+   - Turn the **Cutoff** knob to open/close the filter.
+   - Crank the **Distortion** knob for a heavier sound.
+3. **Sequence**:
+   - Set a **BPM**.
+   - Click **Record** and **Play**.
+   - Play some notes to capture a loop.
+   - Use **Randomize** for instant inspiration.
+
+## 📄 License
+
+MIT License. Feel free to fork and vibe!
