@@ -23,6 +23,9 @@ export interface SynthConfig {
   lfoDepth: number; // 0-1
   lfoFilterMod: boolean;
   lfoAmpMod: boolean;
+  reverbMix: number; // 0 to 1
+  reverbPreset: 'room' | 'hall' | 'space';
+  cutoffRange: 'bass' | 'lead' | 'wide';
 }
 
 
@@ -41,10 +44,15 @@ export interface ActiveVoice {
 
 export class AudioEngine {
   private context: AudioContext;
+  private analyser: AnalyserNode;
   private masterGain: GainNode;
   private distortionNode: WaveShaperNode;
+  private driveGain: GainNode;
+  private toneFilter: BiquadFilterNode;
   private dryGain: GainNode;
   private wetGain: GainNode;
+  private reverbNode: ConvolverNode;
+  private reverbGain: GainNode; // Send level
   private config: SynthConfig;
   private activeVoices: Set<ActiveVoice> = new Set();
 
@@ -53,6 +61,12 @@ export class AudioEngine {
     this.context = new (window.AudioContext || (window as any).webkitAudioContext)();
     this.masterGain = this.context.createGain();
     this.masterGain.connect(this.context.destination);
+
+    // Analyser for Visualizer
+    this.analyser = this.context.createAnalyser();
+    this.analyser.fftSize = 2048;
+    this.masterGain.connect(this.analyser);
+
     // Adjusted master gain to prevent clipping with multiple voices
     this.masterGain.gain.value = 0.3;
 
@@ -60,14 +74,60 @@ export class AudioEngine {
     this.dryGain = this.context.createGain();
     this.wetGain = this.context.createGain();
 
-    // Distortion Node
+    // Distortion Chain: Drive -> WaveShaper -> LP Filter -> WetGain
+    this.driveGain = this.context.createGain();
     this.distortionNode = this.context.createWaveShaper();
-    this.distortionNode.curve = this.makeDistortionCurve(400);
+    this.toneFilter = this.context.createBiquadFilter();
+
+    // Soft Clipper (Tanh)
+    this.distortionNode.curve = this.makeDistortionCurve(); // Curve is static tanh
     this.distortionNode.oversample = '4x';
 
-    // Chain: Wet Path (Distortion -> WetGain -> Master)
-    this.distortionNode.connect(this.wetGain);
+    // Tone Filter (Remove harsh fizz)
+    this.toneFilter.type = 'lowpass';
+    this.toneFilter.frequency.value = 4000; // Creamy lead tone
+    this.toneFilter.Q.value = 0.5;
+
+    // Connect Wet Chain
+    this.driveGain.connect(this.distortionNode);
+    this.distortionNode.connect(this.toneFilter);
+    this.toneFilter.connect(this.wetGain);
     this.wetGain.connect(this.masterGain);
+
+    // Reverb Chain (Parallel)
+    // We tap from after the distortion but before the master mix, or parallel to dry/wet?
+    // Let's tap from the wetGain output (Distorted) and dryGain output (Clean) ?
+    // Simpler: Tap from the ToneFilter (Wet) and DryGain?
+    // Actually, widespread convention is Post-Fader or Pre-Fader.
+    // Let's make Reverb take the FINAL MIX output (before master) effectively, OR parallel.
+    // Plan: Split signal at the end of Voice. Voice -> DryMix AND Voice -> Distortion.
+    // This is getting complex.
+    // SIMPLER PLAN:
+    // Existing:
+    // Voices -> DryGain -> Master
+    // Voices -> Drive -> Distortion -> WetGain -> Master
+
+    // New Reverb Path:
+    // We want Reverb to apply to the final sound (whether distorted or dry).
+    // So we insert an intermediate MasterBus before the real MasterGain.
+    // DryGain -> MasterBus
+    // WetGain -> MasterBus
+    // MasterBus -> MasterGain (Out)
+    // MasterBus -> ReverbGain -> Convolver -> MasterGain
+
+    // NOTE: For this refactor, I'll just tap the Reverb from the same places Dry and Drive tap from.
+    // But wait, the voices connect to dryGain and driveGain directly.
+    // I need a "ReverbSend" node that all voices ALSO connect to.
+
+    // Let's add a `reverbSend` node to the class, and active voices connect to it.
+    this.reverbNode = this.context.createConvolver();
+    this.reverbGain = this.context.createGain();
+
+    this.reverbGain.connect(this.reverbNode);
+    this.reverbNode.connect(this.masterGain);
+
+    // Initial Impulse
+    this.updateReverbImpulse('hall');
 
     // Chain: Dry Path (DryGain -> Master)
     this.dryGain.connect(this.masterGain);
@@ -87,34 +147,92 @@ export class AudioEngine {
       lfoRate: 5,
       lfoDepth: 0,
       lfoFilterMod: true,
-      lfoAmpMod: false
+      lfoAmpMod: false,
+      reverbMix: 0,
+      reverbPreset: 'hall',
+      cutoffRange: 'lead'
     };
 
     this.updateMixNodes();
   }
 
-  // Soft clipping distortion curve
-  private makeDistortionCurve(amount: number) {
-    const k = typeof amount === 'number' ? amount : 50;
+  // Generate synthetic impulse response
+  private generateImpulse(duration: number, decay: number) {
+    const rate = this.context.sampleRate;
+    const length = rate * duration;
+    const impulse = this.context.createBuffer(2, length, rate);
+    const left = impulse.getChannelData(0);
+    const right = impulse.getChannelData(1);
+
+    for (let i = 0; i < length; i++) {
+      // Exponential decay
+      const n = i / length;
+      const env = Math.pow(1 - n, decay);
+
+      // White noise
+      left[i] = (Math.random() * 2 - 1) * env;
+      right[i] = (Math.random() * 2 - 1) * env;
+    }
+    return impulse;
+  }
+
+  private updateReverbImpulse(preset: 'room' | 'hall' | 'space') {
+    let duration = 2.0;
+    let decay = 4.0;
+
+    switch (preset) {
+      case 'room': duration = 0.8; decay = 5.0; break;
+      case 'hall': duration = 2.5; decay = 4.0; break;
+      case 'space': duration = 6.0; decay = 3.0; break;
+    }
+
+    // Convolver buffer set is expensive, only do if needed (logic in updateConfig)
+    this.reverbNode.buffer = this.generateImpulse(duration, decay);
+  }
+
+  // Tanh Soft Clipper
+  private makeDistortionCurve() {
+    // Amount param is unused for pure tanh, but keeping signature compatible if needed later
     const n_samples = 44100;
     const curve = new Float32Array(n_samples);
-    const deg = Math.PI / 180;
+    // const deg = Math.PI / 180;
+
     for (let i = 0; i < n_samples; ++i) {
       const x = (i * 2) / n_samples - 1;
-      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+      // Soft clipping using hyperbolic tangent
+      // We can pre-scale x to make the curve steeper if we wanted "inherent" drive,
+      // but we will use driveGain for that.
+      curve[i] = Math.tanh(x);
     }
     return curve;
   }
 
   private updateMixNodes() {
     const now = this.context.currentTime;
-    // Use equal power crossfade or simple linear? Linear for dry/wet effect usually feels fine.
+
+    // Dry/Wet Mix
+    // As distortion increases, we mix out dry and mix in wet
     this.dryGain.gain.setTargetAtTime(1 - this.config.distortion, now, 0.02);
     this.wetGain.gain.setTargetAtTime(this.config.distortion, now, 0.02);
+
+    // Drive Amount (Boost signal into the tanh curve)
+    // 1x (Clean-ish) to 50x (Heavy Saturation)
+    const drive = 1 + (this.config.distortion * 50);
+    this.driveGain.gain.setTargetAtTime(drive, now, 0.02);
+
+    // Reverb Send
+    // Simple 0-1 gain
+    this.reverbGain.gain.setTargetAtTime(this.config.reverbMix, now, 0.02);
   }
 
   updateConfig(newConfig: Partial<SynthConfig>) {
+    const oldPreset = this.config.reverbPreset;
     this.config = { ...this.config, ...newConfig };
+
+    if (newConfig.reverbPreset && newConfig.reverbPreset !== oldPreset) {
+      this.updateReverbImpulse(newConfig.reverbPreset);
+    }
+
     this.updateMixNodes();
 
     // Update active voices
@@ -137,7 +255,9 @@ export class AudioEngine {
       if (voice.lfo.type !== this.config.lfoWaveform) voice.lfo.type = this.config.lfoWaveform;
 
       // Update Mod Depths based on toggles
-      const filterDepth = this.config.lfoFilterMod ? this.config.lfoDepth * 2000 : 0;
+      // Use Cents for Filter Mod to avoid negative frequencies (Zero Crossing artifacts)
+      // 2400 cents = 2 octaves range
+      const filterDepth = this.config.lfoFilterMod ? this.config.lfoDepth * 2400 : 0;
       const ampDepth = this.config.lfoAmpMod ? this.config.lfoDepth * 0.5 : 0; // 0.5 max volume mod
 
       voice.lfoGain.gain.setTargetAtTime(filterDepth, now, 0.05);
@@ -194,7 +314,7 @@ export class AudioEngine {
     lfo.frequency.setValueAtTime(this.config.lfoRate, now);
 
     // Initial mod depths
-    const filterDepth = this.config.lfoFilterMod ? this.config.lfoDepth * 2000 : 0;
+    const filterDepth = this.config.lfoFilterMod ? this.config.lfoDepth * 2400 : 0;
     const ampDepth = this.config.lfoAmpMod ? this.config.lfoDepth * 0.5 : 0;
 
     lfoGain.gain.value = filterDepth;
@@ -211,18 +331,30 @@ export class AudioEngine {
     osc2Gain.connect(filter);
     filter.connect(ampGain);
 
-    // Amp -> Tremolo -> Dry/Wet Bus
+    // Amp -> Tremolo -> Dry/Wet Bus + Reverb
     ampGain.connect(tremoloGain);
+
+    // Connect to Dry/Distortion Paths
     tremoloGain.connect(this.dryGain);
-    tremoloGain.connect(this.distortionNode);
+    tremoloGain.connect(this.driveGain);
 
-    // Filter Mod Routing:
+    // Connect to Reverb Send
+    // Note: This applies reverb to the PRE-DISTORTION signal if connected directly.
+    // If we want post-distortion reverb, we must tap existing dry/wet gains.
+    // BUT: The dry/wet gains are Global Busses.
+    // If we connect tremoloGain -> reverbGain, we get clean reverb.
+    // If we want distorted reverb, we should connect wetGain -> reverbNode?
+    // Let's keep it simple: Reverb is applied to the SOURCE voice (clean).
+    // This creates a cleaner "Parallel Processing" feel where reverb doesn't get muddied by distortion.
+    tremoloGain.connect(this.reverbGain);
+
+    // Filter Mod Routing (Use Detune to avoid negative Hz)
     filterEnvSource.connect(filterModGain);
-    filterModGain.connect(filter.frequency);
+    filterModGain.connect(filter.detune);
 
-    // LFO -> Filter
+    // LFO -> Filter (Detune)
     lfo.connect(lfoGain);
-    lfoGain.connect(filter.frequency);
+    lfoGain.connect(filter.detune);
 
     // LFO -> Amp (Tremolo)
     lfo.connect(lfoAmpGain);
@@ -240,10 +372,10 @@ export class AudioEngine {
 
     // Filter ADSR (Applied to ConstantSource offset)
     const filt = this.config.filterADSR;
-    const modAmount = 2000; // How much the envelope affects the cutoff in Hz
+    const modAmount = 4800; // 4800 cents = 4 octaves envelope range (Punchy!)
 
     filterEnvSource.offset.setValueAtTime(0, now);
-    filterModGain.gain.value = modAmount; // Max modulation depth
+    filterModGain.gain.value = modAmount;
 
     // Envelope shape on the Source Offset (0 to 1)
     filterEnvSource.offset.linearRampToValueAtTime(1, now + filt.attack);
@@ -296,6 +428,10 @@ export class AudioEngine {
         // Disconnect nodes to help GC
       }, (amp.release + 0.2) * 1000);
     };
+  }
+
+  getAnalyser() {
+    return this.analyser;
   }
 }
 
