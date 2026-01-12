@@ -1,77 +1,99 @@
 # VibeSynth 🎹
 
-![VibeSynth UI](src/assets/screenshots/ui_main.png)
+![VibeSynth Hero](public/assets/vibesynth_hero.png)
 
-**VibeSynth** is a futuristic, cyberpunk-inspired web synthesizer built with **React**, **TypeScript**, and the **Web Audio API**. It features a 3-octave playable keyboard, a 16-step sequencer, and real-time audio effects like distortion and filter sweeps.
+**VibeSynth** is a modern, retro-futuristic web synthesizer built with React, TypeScript, and the Web Audio API. It combines the warm, tactile feel of analog hardware with the flexibility of modern web technology.
 
-## ✨ Features
+## 🌟 Features
 
-### 🎹 3-Octave Virtual Keyboard
-- Ranges from **C3 to C6** (37 keys).
-- Fully responsive design that fits perfectly on standard screens.
-- **Mouse & Touch**: Click or drag across keys to play.
-- **Keyboard Support**: Play the middle octave using your computer keyboard (`A` through `L` rows).
+### 🔊 Dual Oscillator Engine
+*   **Two Oscillators**: Blend between Sine, Triangle, Sawtooth, and Square waveforms.
+*   **Mix Control**: Seamlessly crossfade between OSC 1 and OSC 2.
+*   **Octave Shift**: Transpose your sound from deep bass (-3) to shimmering leads (+3).
 
-### 🎛️ 16-Step Sequencer
-- **Pattern Creation**: Enable steps on a 16-step grid.
-- **Live Recording**: Hit `Record` (Red Circle) and play keys to quantize notes into the sequence in real-time.
-- **BPM Control**: Adjust tempo from **30 to 300 BPM** with a dedicated LED display.
-- **Randomizer**: Instantly generate unique, evolving patterns with the click of a button.
+### 🎛️ Analog-Modeled Filter
+*   **Low Pass Filter**: Smoothes out the sound with a resonant peak.
+*   **3 Ranges**:
+    *   **BASS**: Optimized for deep sub-frequencies (20Hz - 800Hz).
+    *   **LEAD**: Standard synth range (100Hz - 4kHz).
+    *   **WIDE**: Full spectrum sweep (20Hz - 12kHz).
+*   **Resonance Modes**: Switch between **Wait** (Clean), **Punch** (Aggressive), and **Scream** (Self-oscillating aesthetic).
 
-![Sequencer Action](src/assets/screenshots/sequencer_action.png)
+### 📉 Envelopes (ADSR)
+*   **Amp Envelope**: Shape the volume contour of your sound.
+*   **Filter Envelope**: Modulate the filter cutoff over time.
+    *   **Extended Attack**: Create evolving pads with up to 10 seconds of attack time.
 
-### 🔊 Audio Engine & FX
-- **Oscillators**: Powered by Web Audio API standard oscillators.
-- **Distortion**: A dedicated **Dry/Wet Knob** (Red) adds grit and saturation to the sound.
-- **Filter**: Resonant Low-Pass Filter with Cutoff and Resonance controls (Cyan/Fuchsia knobs).
-- **Octave Shift**: Shift the entire keyboard range up or down by 3 octaves.
+### 🌊 Modulation (LFO)
+*   **Routing**: Send LFO to **Filter Cutoff** or **Amplitude** (Tremolo).
+*   **Ultra-Slow Rates**: LFO rates range from **0.01Hz** (100s cycle) for evolving textures to **20Hz** for rapid wobbles.
+*   **Waveforms**: Sine, Triangle, Sawtooth, Square.
 
-## 🛠️ Tech Stack
+### 🌌 Effects
+*   **Distortion**: Add grit and saturation to your signal.
+*   **Reverb**: Place your sound in a **Room**, **Hall**, or deep **Space**.
 
-- **Frontend Framework**: React 18
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4 (for that neon cyberpunk aesthetic)
-- **Audio**: Native Web Audio API (No external sound libraries)
-- **Build Tool**: Vite
+### 🎲 Randomizer
+*   **Instant Inspiration**: Click the "Randomize!" button to generate a completely new, musically-tuned patch instantly.
+
+### 👁️ Visualizer
+*   **Oscilloscope**: Real-time, CRT-style green phosphor waveform visualization.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
+*   Node.js (v16 or higher)
+*   npm or yarn
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/pavelzag/vibesynth.git
-   cd vibesynth
-   ```
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/pavelzag/vibesynth.git
+    cd vibesynth
+    ```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+3.  Start the development server:
+    ```bash
+    npm run dev
+    ```
 
-4. Open your browser at `http://localhost:5173` (or the port shown in terminal).
+4.  Open `http://localhost:5173` in your browser.
 
-## 🎮 How to Play
+## 🎮 Controls
 
-1. **Play**: Click the keys or use your keyboard (`A`, `S`, `D`... for White keys, `W`, `E`... for Black keys).
-2. **Shape Sound**:
-   - Turn the **Cutoff** knob to open/close the filter.
-   - Crank the **Distortion** knob for a heavier sound.
-3. **Sequence**:
-   - Set a **BPM**.
-   - Click **Record** and **Play**.
-   - Play some notes to capture a loop.
-   - Use **Randomize** for instant inspiration.
+| Control | Description |
+| :--- | :--- |
+| **Piano** | Click keys or use your MIDI keyboard to play notes. |
+| **Cutoff** | Brightness of the sound. |
+| **Resonance** | "Ring" or sharpness of the filter peak. |
+| **LFO Rate** | Speed of modulation. |
+| **LFO Depth** | Intensity of modulation. |
+| **Randomize** | Generates a random preset. |
 
-## 📄 License
+## 🎹 MIDI Support
+Connect any WebMIDI-compatible keyboard.
+*   **Keys**: Play notes.
+*   **CC 43**: Filter Cutoff.
+*   **CC 44**: Resonance.
+*   **CC 91**: Reverb Send.
+*   **CC 24**: LFO Rate.
+*   **CC 26**: LFO Depth.
 
-MIT License. Feel free to fork and vibe!
+## 👨‍💻 Credits
+
+Created by **Pavel Zagalsky**.
+
+Built with:
+*   [React](https://reactjs.org/)
+*   [Vite](https://vitejs.dev/)
+*   [Tailwind CSS](https://tailwindcss.com/)
+*   [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+
+---
+*System Online. VibeSynth v1.0*
