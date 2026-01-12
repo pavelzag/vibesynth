@@ -261,7 +261,7 @@ const SynthControls: React.FC<SynthControlsProps> = ({ config, onConfigChange })
                         <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-400 border-b border-cyan-500/30 pb-1 shadow-[0_1px_5px_rgba(34,211,238,0.2)]">Envelopes</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Amp */}
-                            <div className="flex flex-col items-center">
+                            <div className="flex flex-col items-center justify-center w-full">
                                 <h4 className="text-[9px] text-lime-400 font-mono font-semibold mb-2 uppercase tracking-wider text-center">AMP - ADSR</h4>
                                 <div className="flex justify-center gap-2">
                                     {['attack', 'decay', 'sustain', 'release'].map((p) => (
@@ -279,7 +279,7 @@ const SynthControls: React.FC<SynthControlsProps> = ({ config, onConfigChange })
                                 </div>
                             </div>
                             {/* Filter Mod */}
-                            <div className="flex flex-col items-center">
+                            <div className="flex flex-col items-center justify-center w-full">
                                 <h4 className="text-[9px] text-cyan-400 font-mono font-semibold mb-2 uppercase tracking-wider text-center">FILTER - ADSR</h4>
                                 <div className="flex justify-center gap-2">
                                     {['attack', 'release'].map((p) => (
