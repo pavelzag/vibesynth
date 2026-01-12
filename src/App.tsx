@@ -185,7 +185,7 @@ function App() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-gray-950 to-black z-0" />
 
       {/* Synth Chassis - VibeSynth Design */}
-      <div className="z-10 relative flex flex-col w-full max-w-5xl bg-zinc-950/90 backdrop-blur-xl rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] border border-cyan-500/20 p-8 gap-6 transition-all hover:shadow-[0_0_80px_rgba(6,182,212,0.25)]">
+      <div className="z-10 relative flex flex-col w-full max-w-7xl bg-zinc-950/90 backdrop-blur-xl rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] border border-cyan-500/20 p-8 gap-6 transition-all hover:shadow-[0_0_80px_rgba(6,182,212,0.25)]">
 
         {/* Cyber Lines (Decoration) */}
         <div className="absolute top-0 left-10 w-32 h-[1px] bg-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
