@@ -9,7 +9,11 @@ interface NoteDef {
     type: 'white' | 'black';
 }
 
-const Piano: React.FC = () => {
+interface PianoProps {
+    onNotePlay?: (note: string, freq: number) => void;
+}
+
+const Piano: React.FC<PianoProps> = ({ onNotePlay }) => {
     const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
     const activeOscillators = useRef<Map<string, () => void>>(new Map());
 
@@ -51,18 +55,34 @@ const Piano: React.FC = () => {
         return generated;
     }, []);
 
+    const midiNoteToFrequency = (note: number) => {
+        return 440 * Math.pow(2, (note - 69) / 12);
+    };
+
+    const midiNoteToName = (note: number) => {
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const octave = Math.floor(note / 12) - 1;
+        const index = note % 12;
+        return `${noteNames[index]}${octave}`;
+    };
+
     const startPlaying = useCallback((note: string, freq: number) => {
         if (activeOscillators.current.has(note)) return;
 
         const stopNode = audioEngine.playNote(freq);
         activeOscillators.current.set(note, stopNode);
 
+        // Notify parent (Sequencer Recording)
+        if (onNotePlay) {
+            onNotePlay(note, freq);
+        }
+
         setActiveNotes((prev) => {
             const next = new Set(prev);
             next.add(note);
             return next;
         });
-    }, []);
+    }, [onNotePlay]);
 
     const stopPlaying = useCallback((note: string) => {
         const stopNode = activeOscillators.current.get(note);
@@ -111,6 +131,50 @@ const Piano: React.FC = () => {
             window.removeEventListener('keyup', handleKeyUp);
         };
     }, [startPlaying, stopPlaying, notes]);
+
+    // MIDI Support
+    useEffect(() => {
+        if (!navigator.requestMIDIAccess) return;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const onMIDIMessage = (message: any) => {
+            const [command, note, velocity] = message.data;
+            const noteName = midiNoteToName(note);
+            // We can just calculate freq on the fly or look it up. Calculating is safer for range.
+            const freq = midiNoteToFrequency(note);
+
+            // Note On (144)
+            if (command === 144 && velocity > 0) {
+                startPlaying(noteName, freq);
+            }
+            // Note Off (128) or Note On with 0 velocity
+            else if (command === 128 || (command === 144 && velocity === 0)) {
+                stopPlaying(noteName);
+            }
+        };
+
+        navigator.requestMIDIAccess().then((access) => {
+            // Attach to all inputs
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const inputs = (access as any).inputs.values();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            for (const input of inputs) {
+                input.onmidimessage = onMIDIMessage;
+            }
+
+            // Handle new connections
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            access.onstatechange = (e: any) => {
+                const port = e.port;
+                if (port.type === 'input' && port.state === 'connected') {
+                    port.onmidimessage = onMIDIMessage;
+                }
+            };
+        });
+
+        // Cleanup isn't strictly necessary for the global listener but good practice if we stored references.
+        // MIDI Access object doesn't really have a "disconnect" listener method easily.
+    }, [startPlaying, stopPlaying]);
 
     return (
         <div className="relative w-full flex justify-center">

@@ -33,19 +33,28 @@ const Sequencer: React.FC<SequencerProps> = ({ currentNote }) => {
 
     // Handle incoming note for Recording
     useEffect(() => {
-        if (isRecording && currentNote && isPlaying) {
-            // Quantize to current step
+        if (isRecording && currentNote) {
             const newSteps = [...stepsRef.current];
-            newSteps[stepRef.current] = {
-                note: currentNote.note,
-                freq: currentNote.freq,
-                active: true
-            };
-            setSteps(newSteps);
-        } else if (isRecording && currentNote && !isPlaying) {
-            // Step Input Mode (when stopped)?
-            // Let's just do nothing or set the currently selected step? 
-            // Simplicity: Recording only works during playback for now, implies "Live Write".
+
+            if (isPlaying) {
+                // Live Recording: Quantize to current playing step
+                newSteps[stepRef.current] = {
+                    note: currentNote.note,
+                    freq: currentNote.freq,
+                    active: true
+                };
+                setSteps(newSteps);
+            } else {
+                // Step Recording: Enter note at selected step and advance
+                newSteps[currentStep] = {
+                    note: currentNote.note,
+                    freq: currentNote.freq,
+                    active: true
+                };
+                setSteps(newSteps);
+                // Advance cursor for next step entry
+                setCurrentStep((prev) => (prev + 1) % 16);
+            }
         }
     }, [currentNote, isRecording, isPlaying]);
 
@@ -74,6 +83,9 @@ const Sequencer: React.FC<SequencerProps> = ({ currentNote }) => {
             runStep();
         } else {
             if (timerRef.current) clearTimeout(timerRef.current);
+            // When stopping, sync stepRef to current visual cursor so it resumes from there?
+            // Or just reset? Let's sync stepRef to currentStep for smoother resume.
+            stepRef.current = currentStep;
         }
 
         return () => {
@@ -83,7 +95,11 @@ const Sequencer: React.FC<SequencerProps> = ({ currentNote }) => {
 
     const toggleStep = (index: number) => {
         const newSteps = [...steps];
-        // If it has a note, toggle active. If no note, maybe assign a default C4?
+
+        // Always select the clicked step for potential editing
+        setCurrentStep(index);
+
+        // Toggle active state
         if (newSteps[index].note) {
             newSteps[index] = { ...newSteps[index], active: !newSteps[index].active };
         } else {

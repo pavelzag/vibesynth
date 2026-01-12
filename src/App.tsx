@@ -1,15 +1,116 @@
 
-import { useState } from 'react'
-import Piano from './components/Piano'
-import SynthControls from './components/SynthControls'
-import Sequencer from './components/Sequencer'
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Piano from './components/Piano';
+import SynthControls from './components/SynthControls';
+import Sequencer from './components/Sequencer';
+import { audioEngine, type SynthConfig } from './utils/AudioEngine';
 
 function App() {
   const [lastPlayedNote, setLastPlayedNote] = useState<{ note: string; freq: number } | null>(null);
 
-  const handleNotePlay = (note: string, freq: number) => {
-    setLastPlayedNote({ note, freq });
+  // Lifted State for Synth Config
+  const [config, setConfig] = useState<SynthConfig>({
+    osc1Waveform: 'triangle',
+    osc2Waveform: 'sawtooth',
+    ampADSR: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.5 },
+    filterADSR: { attack: 0.05, decay: 0.5, sustain: 0.2, release: 0.5 },
+    filterCutoff: 1000,
+    filterResonance: 5,
+    oscMix: 0.5,
+    octave: 0,
+    distortion: 0,
+    lfoWaveform: 'sine',
+    lfoRate: 5,
+    lfoDepth: 0,
+    lfoFilterMod: true,
+    lfoAmpMod: false
+  });
+
+  // Ref to hold latest config for MIDI listener without re-binding
+  const configRef = useRef(config);
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
+  const handleConfigChange = (updates: Partial<SynthConfig>) => {
+    const newConfig = { ...config, ...updates };
+    setConfig(newConfig);
+    audioEngine.updateConfig(newConfig);
   };
+
+  const handleNotePlay = useCallback((note: string, freq: number) => {
+    setLastPlayedNote({ note, freq });
+  }, []);
+
+  // MIDI CC Listener (Korg Monologue Mapping)
+  useEffect(() => {
+    if (!navigator.requestMIDIAccess) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const onMIDIMessage = (message: any) => {
+      const [command, data1, data2] = message.data;
+
+      // Control Change (CC) - usually 176 (Channel 1)
+      if (command === 176) {
+        const ccHandler = (cc: number, value: number) => {
+          const norm = value / 127; // 0-1
+          const currentConfig = configRef.current;
+          let updates: Partial<SynthConfig> = {};
+
+          switch (cc) {
+            case 43: // Cutoff
+              // Range 20 - 10000
+              updates = { filterCutoff: 20 + norm * 9980 };
+              break;
+            case 44: // Resonance
+              // Range 0 - 20
+              updates = { filterResonance: norm * 20 };
+              break;
+            case 24: // LFO Rate
+              // Range 0.1 - 20
+              updates = { lfoRate: 0.1 + norm * 19.9 };
+              break;
+            case 26: // LFO Depth
+              // Range 0 - 1
+              updates = { lfoDepth: norm };
+              break;
+            case 16: // Attack
+              // Range 0.01 - 2
+              updates = { ampADSR: { ...currentConfig.ampADSR, attack: 0.01 + norm * 2 } };
+              break;
+            case 17: // Decay
+              updates = { ampADSR: { ...currentConfig.ampADSR, decay: 0.01 + norm * 2 } };
+              break;
+            case 18: // Sustain
+              updates = { ampADSR: { ...currentConfig.ampADSR, sustain: norm } };
+              break;
+            case 19: // Release
+              updates = { ampADSR: { ...currentConfig.ampADSR, release: 0.01 + norm * 5 } };
+              break;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            const newConfig = { ...currentConfig, ...updates };
+            setConfig(newConfig);
+            audioEngine.updateConfig(newConfig);
+          }
+        };
+        ccHandler(data1, data2);
+      }
+    };
+
+    navigator.requestMIDIAccess().then((access) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const inputs = (access as any).inputs.values();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const input of inputs) {
+        input.onmidimessage = onMIDIMessage;
+      }
+    });
+
+    // Cleanup: Remove listeners if possible, though Web MIDI API cleaning is tricky.
+    // Since this effect now runs once on mount, we are much safer.
+  }, []); // Empty dependency array = Runs once on mount
 
   return (
     <div className="h-screen w-full flex items-center justify-center bg-gray-950 text-white overflow-hidden relative select-none">
@@ -45,7 +146,7 @@ function App() {
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-[80px] pointer-events-none" />
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none" />
 
-          <SynthControls />
+          <SynthControls config={config} onConfigChange={handleConfigChange} />
         </div>
 
         {/* Sequencer Section */}
