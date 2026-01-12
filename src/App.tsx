@@ -209,7 +209,6 @@ function App() {
               <div className="w-1 bg-cyan-500/30 rounded-full animate-pulse delay-75" />
               <div className="w-1 bg-cyan-500/10 rounded-full animate-pulse delay-150" />
             </div>
-            <span className="text-[10px] text-cyan-500/70 uppercase tracking-widest font-mono">System Online</span>
             <button
               onClick={randomizeConfig}
               className="ml-4 px-3 py-1 bg-gradient-to-r from-fuchsia-600 to-pink-600 rounded text-[10px] font-bold uppercase tracking-wider text-white shadow-[0_0_10px_rgba(232,121,249,0.5)] hover:bg-fuchsia-500 transition-all hover:scale-105 active:scale-95"
