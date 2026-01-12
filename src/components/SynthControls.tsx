@@ -81,7 +81,7 @@ const SynthControls: React.FC<SynthControlsProps> = ({ config, onConfigChange })
                 </div>
 
                 {/* Filter & Global */}
-                <div className="flex-[2] flex flex-col gap-4">
+                <div className="flex-1 flex flex-col gap-4">
                     <div className="flex justify-between items-end border-b border-cyan-500/30 pb-1 mb-2">
                         <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-400 shadow-[0_1px_5px_rgba(34,211,238,0.2)]">Filter & FX</h3>
                     </div>
@@ -155,40 +155,37 @@ const SynthControls: React.FC<SynthControlsProps> = ({ config, onConfigChange })
                                 color="bg-red-500"
                                 size={54}
                             />
+
+                            {/* Reverb Controls (Moved) */}
+                            <div className="flex flex-col gap-2 items-center bg-white/5 p-3 rounded-xl border border-white/5 min-w-[80px]">
+                                <label className="text-[10px] text-fuchsia-400 font-bold tracking-widest uppercase mb-1 drop-shadow-[0_0_5px_rgba(232,121,249,0.5)]">Reverb</label>
+                                <div className="flex bg-black/40 p-1 rounded-lg border border-fuchsia-500/20 gap-1 w-full">
+                                    {['room', 'hall', 'space'].map((r: string) => (
+                                        <button
+                                            key={r}
+                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                            onClick={() => updateEngine({ reverbPreset: r as any })}
+                                            className={`flex-1 py-1 text-[8px] uppercase font-bold rounded transition-all leading-none
+                                                    ${config.reverbPreset === r
+                                                    ? 'bg-fuchsia-500 text-black shadow-[0_0_10px_rgba(232,121,249,0.5)]'
+                                                    : 'text-fuchsia-500/40 hover:text-fuchsia-400 hover:bg-white/5'}`}
+                                        >
+                                            {r}
+                                        </button>
+                                    ))}
+                                </div>
+                                <Knob
+                                    label="Send"
+                                    value={config.reverbMix}
+                                    min={0}
+                                    max={1}
+                                    step={0.01}
+                                    onChange={(v) => updateEngine({ reverbMix: v })}
+                                    color="bg-fuchsia-400"
+                                    size={48}
+                                />
+                            </div>
                         </div>
-                    </div>
-
-                    {/* Reverb Controls */}
-                    <div className="flex flex-col gap-2 items-center bg-white/5 p-3 rounded-xl border border-white/5 min-w-[80px]">
-                        <label className="text-[10px] text-fuchsia-400 font-bold tracking-widest uppercase mb-1 drop-shadow-[0_0_5px_rgba(232,121,249,0.5)]">Reverb</label>
-
-                        {/* Preset Toggles */}
-                        <div className="flex bg-black/40 p-1 rounded-lg border border-fuchsia-500/20 gap-1 w-full">
-                            {['room', 'hall', 'space'].map((r: string) => (
-                                <button
-                                    key={r}
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                    onClick={() => updateEngine({ reverbPreset: r as any })}
-                                    className={`flex-1 py-1 text-[8px] uppercase font-bold rounded transition-all leading-none
-                                            ${config.reverbPreset === r
-                                            ? 'bg-fuchsia-500 text-black shadow-[0_0_10px_rgba(232,121,249,0.5)]'
-                                            : 'text-fuchsia-500/40 hover:text-fuchsia-400 hover:bg-white/5'}`}
-                                >
-                                    {r}
-                                </button>
-                            ))}
-                        </div>
-
-                        <Knob
-                            label="Send"
-                            value={config.reverbMix}
-                            min={0}
-                            max={1}
-                            step={0.01}
-                            onChange={(v) => updateEngine({ reverbMix: v })}
-                            color="bg-fuchsia-400"
-                            size={48}
-                        />
                     </div>
                 </div>
 
@@ -260,7 +257,7 @@ const SynthControls: React.FC<SynthControlsProps> = ({ config, onConfigChange })
                     </div>
 
                     {/* Envelopes */}
-                    <div className="flex-[2] space-y-2">
+                    <div className="flex-1 space-y-2">
                         <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-400 border-b border-cyan-500/30 pb-1 shadow-[0_1px_5px_rgba(34,211,238,0.2)]">Envelopes</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Amp */}
