@@ -190,9 +190,9 @@ const SynthControls: React.FC<SynthControlsProps> = ({ config, onConfigChange })
                 </div>
 
                 {/* LFO & Envelopes Container */}
-                <div className="flex flex-col md:flex-row gap-4 mt-2">
+                <div className="flex flex-col lg:flex-row gap-8 mt-2">
                     {/* LFO Section */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline border-b border-cyan-500/30 pb-1 mb-2 shadow-[0_1px_5px_rgba(34,211,238,0.2)]">
                             <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-400">LFO</h3>
                         </div>
@@ -257,7 +257,7 @@ const SynthControls: React.FC<SynthControlsProps> = ({ config, onConfigChange })
                     </div>
 
                     {/* Envelopes */}
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-2 min-w-0">
                         <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-400 border-b border-cyan-500/30 pb-1 shadow-[0_1px_5px_rgba(34,211,238,0.2)]">Envelopes</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Amp */}
