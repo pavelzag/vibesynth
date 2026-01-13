@@ -109,7 +109,7 @@ const Piano: React.FC<PianoProps> = ({ onNotePlay }) => {
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.repeat) return;
-            const noteName = keyMap[e.key];
+            const noteName = keyMap[e.key.toLowerCase()];
             if (noteName) {
                 const noteDef = notes.find(n => n.note === noteName);
                 if (noteDef) startPlaying(noteDef.note, noteDef.freq);
